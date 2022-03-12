@@ -262,20 +262,18 @@ export default {
   methods: {
     getData () {
       const xhttp = new XMLHttpRequest()
-      xhttp.open('GET', 'data/1d.csv', true)
+      xhttp.open('GET', 'data/1d 2018-2019.csv', true)
       xhttp.responseType = 'text'
       xhttp.onload = () => {
         this.data = xhttp.responseText.split(/\r?\n|\r/)
         this.data.shift()
         this.data.pop()
-        this.data.pop()
-        this.data.pop()
-        this.data.pop()
         this.data = this.data.map(d => {
-          d = d.replace(/"|\\/g, '').split(',')
-          return parseFloat(d[1])
-        })
+          d = d.split(',"')
+          return parseFloat(d[1].replace(/,|"/g, ''))
+        }).reverse()
         this.draw()
+        this.bot()
       }
       xhttp.send()
     },
@@ -354,6 +352,37 @@ export default {
         ctx.moveTo(i * scaleX, c.height - average)
       }
       ctx.stroke()
+    },
+    bot () {
+      let investments = 0
+      let investmentsTotal = 0
+      let assets = 0
+      let gains = 0
+      let gainTreshold = 10 / 100 + 1
+      let bid = 1
+      let fee = 0.01 / 100
+      let prices = []
+      const acceptHigherMean = false
+      this.data.forEach(price => {
+        let value = assets * price
+        value -= value * fee
+        if (value > investments * gainTreshold) {
+          gains += value - investments
+          investmentsTotal += investments
+          investments = 0
+          assets = 0
+          prices = []
+        }
+
+        const mean = prices.reduce((a, p) => a + p, 0) / prices.length
+        if (acceptHigherMean || !investments || price < mean) {
+          investments += bid
+          const bidAsset = bid / price
+          assets += bidAsset - bidAsset * fee
+          prices.push(price)
+        }
+      })
+      console.log(investments, investmentsTotal, gains)
     }
   }
 }
