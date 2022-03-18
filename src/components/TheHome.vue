@@ -257,12 +257,14 @@ export default {
     }
   },
   created () {
-    this.getData()
+    this.getData(2018)
+    this.getData(2020)
+    this.getData(2021)
   },
   methods: {
-    getData () {
+    getData (year) {
       const xhttp = new XMLHttpRequest()
-      xhttp.open('GET', 'data/1d 2018-2019.csv', true)
+      xhttp.open('GET', `data/1d ${year}.csv`, true)
       xhttp.responseType = 'text'
       xhttp.onload = () => {
         this.data = xhttp.responseText.split(/\r?\n|\r/)
@@ -354,35 +356,91 @@ export default {
       ctx.stroke()
     },
     bot () {
+      // settings
+      let gainTresholdInit = 100 / 100 + 1
+      let reinvestPercentage = 0 / 100
+      let standardBid = 100
+
+      let gainTreshold = gainTresholdInit
       let investments = 0
       let investmentsTotal = 0
       let assets = 0
       let gains = 0
-      let gainTreshold = 10 / 100 + 1
-      let bid = 1
+      let reinvestments = 0
       let fee = 0.01 / 100
-      let prices = []
-      const acceptHigherMean = false
-      this.data.forEach(price => {
-        let value = assets * price
-        value -= value * fee
-        if (value > investments * gainTreshold) {
-          gains += value - investments
+      let investmentValue = 0
+      const acceptHigherMean = true
+      const trades = []
+      this.data.forEach((price, i) => {
+        investmentValue = assets * price
+        investmentValue -= investmentValue * fee
+        if (investmentValue > (investments + reinvestments) * gainTreshold) {
+          gains += investmentValue - investments
           investmentsTotal += investments
           investments = 0
+          reinvestments = 0
           assets = 0
-          prices = []
+          gainTreshold = gainTresholdInit
+          trades.push({
+            date: Date.now(),
+            pair: '',
+            price,
+            value: investmentValue,
+            amount: assets,
+            type: 'sell'
+          })
         }
 
-        const mean = prices.reduce((a, p) => a + p, 0) / prices.length
-        if (acceptHigherMean || !investments || price < mean) {
+        const mean = investments / assets
+        if (acceptHigherMean || !mean || price < mean) {
+          let reinvestment = 0
+          if (price < mean) {
+            reinvestment = reinvestPercentage * gains
+            gains -= reinvestment
+            reinvestments += reinvestment
+          }
+          const average = this.getAverage(this.data, i, 365)
+          const ma10 = this.getAverage(this.data, i, 10)
+          const ma20 = this.getAverage(this.data, i, 20)
+          let bid
+          if (price < average) {
+            bid = ma10 < ma20 ? standardBid * 2 : standardBid / 2 // Math.max(0, Math.min(standardBid * 2, average / price * standardBid)) || standardBid
+          } else {
+            bid = ma10 > ma20 ? standardBid * 2 : standardBid / 2 // Math.max(0, Math.min(standardBid * 2, average / price * standardBid)) || standardBid
+          }
           investments += bid
-          const bidAsset = bid / price
-          assets += bidAsset - bidAsset * fee
-          prices.push(price)
+          const value = bid + reinvestment
+          let amount = value / price
+          amount = amount - amount * fee
+          assets += amount
+          gainTreshold = Math.max(1.01, gainTreshold - 0.01)
+          trades.push({
+            date: Date.now(),
+            pair: '',
+            price,
+            value,
+            amount,
+            type: 'buy'
+          })
         }
       })
-      console.log(investments, investmentsTotal, gains)
+      console.log(
+        'revenue: ' + Math.floor(gains / investmentsTotal * 100) + '%',
+        'gains: ' + Math.floor(gains),
+        'current asset value: ' + Math.floor(investmentValue),
+        'current mean price: ' + investments / assets,
+        'sell orders: ' + trades.filter(t => t.type === 'sell').length
+      )
+    },
+    getAverage (data, index, span) {
+      let sum = 0
+      if (index < span) {
+        span += (index - span)
+      }
+      for (let j = index - span + 1; j <= index; j++) {
+        sum += data[j]
+      }
+      return sum / span
     }
   }
 }
