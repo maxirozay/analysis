@@ -355,7 +355,7 @@ export default {
     },
     bot () {
       // settings
-      let reinvestPercentage = 10 / 100
+      let reinvestPercentage = 1 / 100
       let standardBid = 100
 
       let investments = 0
@@ -365,15 +365,16 @@ export default {
       let reinvestments = 0
       let fee = 0.01 / 100
       let investmentValue = 0
+      let totalInvested = 0
       const acceptHigherMean = true
       const trades = []
       this.data.forEach((price, i) => {
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
         const average = this.getAverage(this.data, i, 200)
-        if (investmentValue > (investments + reinvestments) * Math.min(Math.max(1.1, Math.pow(price / average, 2)), 5)) {
-          const gain = investmentValue - investments
-          gains += gain
+        totalInvested = investments + reinvestments
+        if (investmentValue > totalInvested * Math.min(Math.max(1.1, Math.pow(price / average, 2)), 5)) {
+          gains += investmentValue - investments
           investmentsTotal += investments
           investments = 0
           reinvestments = 0
@@ -385,19 +386,19 @@ export default {
             value: investmentValue,
             amount: assets,
             type: 'sell',
-            gain
+            gain: investmentValue - totalInvested
           })
         }
 
-        const mean = investments / assets
+        const mean = totalInvested / assets
         if (acceptHigherMean || !mean || price < mean) {
           let reinvestment = 0
-          if (price < mean) {
-            reinvestment = Math.max(reinvestPercentage * gains, standardBid)
-            gains -= reinvestment
-            reinvestments += reinvestment
-          }
-          let bid = Math.min(standardBid * Math.pow(average / price, 2), 2 * standardBid) || standardBid
+          const weight = Math.pow(average / price, 2)
+          reinvestment = Math.min(weight * reinvestPercentage * gains, 2 * standardBid)
+          gains -= reinvestment
+          reinvestments += reinvestment
+
+          let bid = Math.min(standardBid * weight, 2 * standardBid) || standardBid
           investments += bid
           const value = bid + reinvestment
           let amount = value / price
@@ -421,18 +422,19 @@ export default {
           console.log(
             Math.ceil(i / 365),
             'gains: ' + yearlyGain + ' ' + Math.round(yearlyGain / yearlyInvestment * 100) + '%',
-            'investments: ' + Math.floor(investments),
+            'investments: ' + Math.floor(totalInvested),
             'asset value: ' + Math.floor(investmentValue),
-            'mean price: ' + investments / assets,
+            'mean price: ' + totalInvested / assets,
             'sell orders: ' + yearlySell.length
           )
         }
       })
+      totalInvested = investments + reinvestments
       console.log(
         'gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsTotal * 100) + '%',
-        'investments: ' + Math.floor(investments),
+        'investments: ' + Math.floor(totalInvested),
         'asset value: ' + Math.floor(investmentValue),
-        'mean price: ' + investments / assets,
+        'mean price: ' + totalInvested / assets,
         'sell orders: ' + trades.filter(t => t.type === 'sell').length
       )
     },
@@ -444,7 +446,7 @@ export default {
       for (let j = index - span + 1; j <= index; j++) {
         sum += data[j]
       }
-      return sum / span
+      return sum / span || data[index]
     }
   }
 }
