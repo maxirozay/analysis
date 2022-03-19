@@ -355,7 +355,7 @@ export default {
     },
     bot () {
       // settings
-      let reinvestPercentage = 0 / 100
+      let reinvestPercentage = 1 / 100
       let standardBid = 100
 
       let investments = 0
@@ -370,8 +370,8 @@ export default {
       this.data.forEach((price, i) => {
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
-        const average = this.getAverage(this.data, i, 100)
-        if (investmentValue > (investments + reinvestments) * Math.max(1.1, Math.pow(price / average, 2))) {
+        const average = this.getAverage(this.data, i, 200)
+        if (investmentValue > (investments + reinvestments) * Math.min(Math.max(1.1, Math.pow(price / average, 2)), 3)) {
           const gain = investmentValue - investments
           gains += gain
           investmentsTotal += investments
