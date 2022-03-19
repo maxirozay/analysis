@@ -355,7 +355,7 @@ export default {
     },
     bot () {
       // settings
-      let reinvestPercentage = 1 / 100
+      let reinvestPercentage = 10 / 100
       let standardBid = 100
 
       let investments = 0
@@ -393,7 +393,7 @@ export default {
         if (acceptHigherMean || !mean || price < mean) {
           let reinvestment = 0
           if (price < mean) {
-            reinvestment = reinvestPercentage * gains
+            reinvestment = Math.max(reinvestPercentage * gains, standardBid)
             gains -= reinvestment
             reinvestments += reinvestment
           }
