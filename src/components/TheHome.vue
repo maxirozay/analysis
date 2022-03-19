@@ -371,9 +371,11 @@ export default {
       this.data.forEach((price, i) => {
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
-        const average = this.getAverage(this.data, i, 200)
+        const average = this.getAverage(this.data, i, 100)
+        const average2 = this.getAverage(this.data, Math.max(0, i - 10), 100)
+        const strength = average / average2
         totalInvested = investments + reinvestments
-        if (investmentValue > totalInvested * Math.min(Math.max(1.1, Math.pow(price / average, 2)), 5)) {
+        if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / average * strength), 5)) {
           gains += investmentValue - investments
           investmentsTotal += investments
           investments = 0
