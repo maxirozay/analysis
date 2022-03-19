@@ -371,7 +371,7 @@ export default {
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
         const average = this.getAverage(this.data, i, 200)
-        if (investmentValue > (investments + reinvestments) * Math.min(Math.max(1.1, Math.pow(price / average, 2)), 3)) {
+        if (investmentValue > (investments + reinvestments) * Math.min(Math.max(1.1, Math.pow(price / average, 2)), 5)) {
           const gain = investmentValue - investments
           gains += gain
           investmentsTotal += investments
