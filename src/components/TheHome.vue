@@ -257,14 +257,12 @@ export default {
     }
   },
   created () {
-    this.getData(2018)
-    this.getData(2020)
-    this.getData(2021)
+    this.getData()
   },
   methods: {
     getData (year) {
       const xhttp = new XMLHttpRequest()
-      xhttp.open('GET', `data/1d ${year}.csv`, true)
+      xhttp.open('GET', `data/1d 2018-2022.csv`, true)
       xhttp.responseType = 'text'
       xhttp.onload = () => {
         this.data = xhttp.responseText.split(/\r?\n|\r/)
@@ -357,11 +355,9 @@ export default {
     },
     bot () {
       // settings
-      let gainTresholdInit = 100 / 100 + 1
       let reinvestPercentage = 0 / 100
       let standardBid = 100
 
-      let gainTreshold = gainTresholdInit
       let investments = 0
       let investmentsTotal = 0
       let assets = 0
@@ -374,20 +370,22 @@ export default {
       this.data.forEach((price, i) => {
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
-        if (investmentValue > (investments + reinvestments) * gainTreshold) {
-          gains += investmentValue - investments
+        const average = this.getAverage(this.data, i, 100)
+        if (investmentValue > (investments + reinvestments) * Math.max(1.1, Math.pow(price / average, 2))) {
+          const gain = investmentValue - investments
+          gains += gain
           investmentsTotal += investments
           investments = 0
           reinvestments = 0
           assets = 0
-          gainTreshold = gainTresholdInit
           trades.push({
             date: Date.now(),
             pair: '',
             price,
             value: investmentValue,
             amount: assets,
-            type: 'sell'
+            type: 'sell',
+            gain
           })
         }
 
@@ -399,21 +397,12 @@ export default {
             gains -= reinvestment
             reinvestments += reinvestment
           }
-          const average = this.getAverage(this.data, i, 365)
-          const ma10 = this.getAverage(this.data, i, 10)
-          const ma20 = this.getAverage(this.data, i, 20)
-          let bid
-          if (price < average) {
-            bid = ma10 < ma20 ? standardBid * 2 : standardBid / 2 // Math.max(0, Math.min(standardBid * 2, average / price * standardBid)) || standardBid
-          } else {
-            bid = ma10 > ma20 ? standardBid * 2 : standardBid / 2 // Math.max(0, Math.min(standardBid * 2, average / price * standardBid)) || standardBid
-          }
+          let bid = standardBid * Math.pow(average / price, 2) || standardBid
           investments += bid
           const value = bid + reinvestment
           let amount = value / price
           amount = amount - amount * fee
           assets += amount
-          gainTreshold = Math.max(1.01, gainTreshold - 0.01)
           trades.push({
             date: Date.now(),
             pair: '',
@@ -423,12 +412,27 @@ export default {
             type: 'buy'
           })
         }
+        
+        if (i && i % 365 == 0) {
+          const yearlyBuy = trades.slice(-365).filter(t => t.type === 'buy')
+          const yearlySell = trades.slice(-365).filter(t => t.type === 'sell')
+          const yearlyGain = Math.floor(yearlySell.reduce((a, t) => a + t.gain, 0))
+          const yearlyInvestment = yearlyBuy.reduce((a, t) => a + t.value, 0)
+          console.log(
+            Math.ceil(i / 365),
+            'gains: ' + yearlyGain + ' ' + Math.round(yearlyGain / yearlyInvestment * 100) + '%',
+            'investments: ' + Math.floor(investments),
+            'asset value: ' + Math.floor(investmentValue),
+            'mean price: ' + investments / assets,
+            'sell orders: ' + yearlySell.length
+          )
+        }
       })
       console.log(
-        'revenue: ' + Math.floor(gains / investmentsTotal * 100) + '%',
-        'gains: ' + Math.floor(gains),
-        'current asset value: ' + Math.floor(investmentValue),
-        'current mean price: ' + investments / assets,
+        'gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsTotal * 100) + '%',
+        'investments: ' + Math.floor(investments),
+        'asset value: ' + Math.floor(investmentValue),
+        'mean price: ' + investments / assets,
         'sell orders: ' + trades.filter(t => t.type === 'sell').length
       )
     },
