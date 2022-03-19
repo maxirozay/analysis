@@ -359,7 +359,7 @@ export default {
       let standardBid = 100
 
       let investments = 0
-      let investmentsTotal = 0
+      let investmentsMax = 0
       let assets = 0
       let gains = 0
       let reinvestments = 0
@@ -375,12 +375,9 @@ export default {
         const average2 = this.getAverage(this.data, Math.max(0, i - 10), 100)
         const strength = average / average2
         totalInvested = investments + reinvestments
-        if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / average * strength), 5)) {
+        if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / average * strength), 2)) {
           gains += investmentValue - investments
-          investmentsTotal += investments
-          investments = 0
-          reinvestments = 0
-          assets = 0
+          investmentsMax = Math.max(investments, investmentsMax)
           trades.push({
             date: Date.now(),
             pair: '',
@@ -390,18 +387,21 @@ export default {
             type: 'sell',
             gain: investmentValue - totalInvested
           })
+          investments = 0
+          reinvestments = 0
+          assets = 0
         }
 
         const mean = totalInvested / assets
         if (acceptHigherMean || !mean || price < mean) {
           let reinvestment = 0
-          const weight = Math.pow(average / price, 2)
-          reinvestment = Math.min(weight * reinvestPercentage * gains, 2 * standardBid)
+          reinvestment = Math.min(reinvestPercentage * gains, 2 * standardBid)
           gains -= reinvestment
           reinvestments += reinvestment
 
-          let bid = Math.min(standardBid * weight, 2 * standardBid) || standardBid
+          let bid = Math.min(standardBid * Math.pow(average / price, 2), 2 * standardBid) || standardBid
           investments += bid
+
           const value = bid + reinvestment
           let amount = value / price
           amount = amount - amount * fee
@@ -420,23 +420,24 @@ export default {
           const yearlyBuy = trades.slice(-365).filter(t => t.type === 'buy')
           const yearlySell = trades.slice(-365).filter(t => t.type === 'sell')
           const yearlyGain = Math.floor(yearlySell.reduce((a, t) => a + t.gain, 0))
-          const yearlyInvestment = yearlyBuy.reduce((a, t) => a + t.value, 0)
           console.log(
             Math.ceil(i / 365),
-            'gains: ' + yearlyGain + ' ' + Math.round(yearlyGain / yearlyInvestment * 100) + '%',
-            'investments: ' + Math.floor(totalInvested),
+            'gains: ' + yearlyGain + ' ' + Math.round(yearlyGain / investmentsMax * 100) + '%',
+            'investment max: ' + Math.floor(investmentsMax),
+            'investments: ' + Math.floor(investments) + '+' +  Math.floor(reinvestments),
             'asset value: ' + Math.floor(investmentValue),
-            'mean price: ' + totalInvested / assets,
+            'mean price: ' + Math.floor(totalInvested / assets),
             'sell orders: ' + yearlySell.length
           )
         }
       })
       totalInvested = investments + reinvestments
       console.log(
-        'gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsTotal * 100) + '%',
-        'investments: ' + Math.floor(totalInvested),
+        'gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsMax * 100) + '%',
+        'investment max: ' + Math.floor(investmentsMax),
+        'investments: ' + Math.floor(investments) + '+' +  Math.floor(reinvestments),
         'asset value: ' + Math.floor(investmentValue),
-        'mean price: ' + totalInvested / assets,
+        'mean price: ' + Math.floor(totalInvested / assets),
         'sell orders: ' + trades.filter(t => t.type === 'sell').length
       )
     },
