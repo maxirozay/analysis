@@ -371,8 +371,8 @@ export default {
       this.data.forEach((price, i) => {
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
-        const average = this.getAverage(this.data, i, 100)
-        const average2 = this.getAverage(this.data, Math.max(0, i - 10), 100)
+        const average = this.getAverage(this.data, 100, i)
+        const average2 = this.getAverage(this.data, 100, i - 10)
         const strength = average / average2
         totalInvested = investments + reinvestments
         if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / average * strength), 2)) {
@@ -443,15 +443,11 @@ export default {
         'sell orders: ' + trades.filter(t => t.type === 'sell').length
       )
     },
-    getAverage (data, index, span) {
-      let sum = 0
-      if (index < span) {
-        span += (index - span)
-      }
-      for (let j = index - span + 1; j <= index; j++) {
-        sum += data[j]
-      }
-      return sum / span || data[index]
+    getAverage (data, span, index) {
+      index = Math.min(data.length, Math.max(0, index + 1))
+      const range = data.slice(Math.max(index - span, 0), index)
+      const sum = range.reduce((a, price) => a + price, 0)
+      return sum / range.length
     }
   }
 }
