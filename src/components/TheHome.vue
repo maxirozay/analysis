@@ -395,9 +395,11 @@ export default {
         const mean = totalInvested / assets
         if (acceptHigherMean || !mean || price < mean) {
           let reinvestment = 0
-          reinvestment = Math.min(reinvestPercentage * gains, 2 * standardBid)
-          gains -= reinvestment
-          reinvestments += reinvestment
+          if (gains > 0) {
+            reinvestment = Math.min(reinvestPercentage * gains, 2 * standardBid)
+            gains -= reinvestment
+            reinvestments += reinvestment
+          }
 
           let bid = Math.min(standardBid * Math.pow(average / price, 2), 2 * standardBid) || standardBid
           investments += bid
