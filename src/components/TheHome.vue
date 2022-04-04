@@ -260,7 +260,7 @@ export default {
     this.getData()
   },
   methods: {
-    getData (year) {
+    getData () {
       const xhttp = new XMLHttpRequest()
       xhttp.open('GET', `data/1d 2018-2022.csv`, true)
       xhttp.responseType = 'text'
@@ -419,7 +419,6 @@ export default {
         }
         
         if (i && i % 365 == 0) {
-          const yearlyBuy = trades.slice(-365).filter(t => t.type === 'buy')
           const yearlySell = trades.slice(-365).filter(t => t.type === 'sell')
           const yearlyGain = Math.floor(yearlySell.reduce((a, t) => a + t.gain, 0))
           console.log(
