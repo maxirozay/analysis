@@ -268,14 +268,14 @@ export default {
   methods: {
     getData () {
       const xhttp = new XMLHttpRequest()
-      xhttp.open('GET', `data/1d 2018-2022.csv`, true)
+      xhttp.open('GET', `data/ETH.csv`, true)
       xhttp.responseType = 'text'
       xhttp.onload = () => {
         this.data = xhttp.responseText.split(/\r?\n|\r/)
         this.data.shift()
         this.data.pop()
         this.data = this.data.map(d => {
-          d = d.split(',"')
+          d = d.split(',')
           return {
             date: d[0],
             open: parseFloat(d[1].replace(/,|"/g, '')),
@@ -283,7 +283,7 @@ export default {
             low: parseFloat(d[3].replace(/,|"/g, '')),
             close: parseFloat(d[4].replace(/,|"/g, '')),
           }
-        }).reverse()
+        })//.reverse()
         this.draw()
         this.bot()
       }
@@ -369,6 +369,7 @@ export default {
       console.log('')
       // settings
       let reinvestPercentage = 1 / 100
+      let reinvestmentBid = 0
       let standardBid = 100
 
       let investments = 0
@@ -379,19 +380,25 @@ export default {
       let fee = 0.01 / 100
       let investmentValue = 0
       let totalInvested = 0
+      let buyCounter = 0
+      let buyCounterMax = 0
       const acceptHigherMean = true
       const trades = []
       this.data.forEach((line, i) => {
         const price = line.close
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
-        const average = this.getAverage(this.data, 100, i)
-        const average2 = this.getAverage(this.data, 100, i - 10)
+        const span = 20
+        const average = this.getAverage(this.data, span, i)
+        const average2 = this.getAverage(this.data, span, i - 10)
         const strength = average / average2
         totalInvested = investments + reinvestments
-        if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / average * strength), 2)) {
+        if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / average * strength), 1.5)) {
+          const gain = investmentValue - totalInvested
+          reinvestmentBid += reinvestPercentage * gain
           gains += investmentValue - investments
           investmentsMax = Math.max(investments, investmentsMax)
+          buyCounterMax = Math.max(buyCounter, buyCounterMax)
           trades.push({
             date: Date.now(),
             pair: '',
@@ -399,18 +406,19 @@ export default {
             value: investmentValue,
             amount: assets,
             type: 'sell',
-            gain: investmentValue - totalInvested
+            gain
           })
           investments = 0
           reinvestments = 0
           assets = 0
+          buyCounter = 0
         }
 
         const mean = totalInvested / assets
         if (acceptHigherMean || !mean || price < mean) {
           let reinvestment = 0
-          if (gains > 0) {
-            reinvestment = Math.min(reinvestPercentage * gains, 2 * standardBid)
+          if (reinvestmentBid && gains > reinvestmentBid) {
+            reinvestment = Math.min(reinvestmentBid / 2 * Math.pow(average / price, 5), reinvestmentBid)
             gains -= reinvestment
             reinvestments += reinvestment
           }
@@ -422,6 +430,7 @@ export default {
           let amount = value / price
           amount = amount - amount * fee
           assets += amount
+          buyCounter++
           trades.push({
             date: Date.now(),
             pair: '',
@@ -448,12 +457,15 @@ export default {
       })
       totalInvested = investments + reinvestments
       console.log(
-        'TOTAL => gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsMax * 100) + '%',
+        'TOTAL => ' + Math.floor(gains + reinvestments),
+        'gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsMax * 100) + '%',
         'investment max: ' + Math.floor(investmentsMax),
+        buyCounterMax,
         'investments: ' + Math.floor(investments) + '+' +  Math.floor(reinvestments),
         'asset value: ' + Math.floor(investmentValue),
         'mean price: ' + Math.floor(totalInvested / assets),
-        'sell orders: ' + trades.filter(t => t.type === 'sell').length
+        'sell orders: ' + trades.filter(t => t.type === 'sell').length,
+        'reinvestmentBid: ' + Math.floor(reinvestmentBid)
       )
     },
     getAverage (data, span, index) {
