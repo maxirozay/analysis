@@ -101,8 +101,9 @@ export default {
         }
       }
       let lastPercentageDiff = 0
-      let last = this.data[0]
-      this.data.forEach(d => {
+      let last = this.data[0]?.close
+      this.data.forEach(line => {
+        const d = line.close
         const percentageDiff = 100 - 100 / last * d
         if (lastPercentageDiff > 0) {
           if (percentageDiff < 0) reactions.bull.negative++
@@ -129,10 +130,11 @@ export default {
       return reactions
     },
     streaks () {
-      let last = this.data[0]
+      let last = this.data[0]?.close
       let bullish = true
       let directions = [0]
-      this.data.forEach(d => {
+      this.data.forEach(line => {
+        const d = line.close
         const percentageDiff = 100 - 100 / last * d
 
         if (bullish) {
@@ -167,7 +169,8 @@ export default {
     },
     levels () {
       let levels = {}
-      this.data.forEach(d => {
+      this.data.forEach(line => {
+        let d = line.close
         const round = Math.pow(10, Math.floor(Math.log10(d)) - 1)
         d = Math.round(d / round) * round
         levels[d] = levels[d] ? levels[d] + 1 : 1
@@ -176,9 +179,10 @@ export default {
     },
     diffsByUnit () {
       let diffs = {}
-      let last = this.data[0]
+      let last = this.data[0]?.close
       let lastDiff = 0
-      this.data.forEach(d => {
+      this.data.forEach(line => {
+        const d = line.close
         const diff = Math.round((d - last) / last * 100)
         if (diffs[lastDiff]) diffs[lastDiff].push(diff)
         else diffs[lastDiff] = [diff]
@@ -197,9 +201,10 @@ export default {
     },
     diffsByStreak () {
       let diffs = {}
-      let last = this.data[0]
+      let last = this.data[0]?.close
       let lastDiff = 1
-      this.data.forEach(d => {
+      this.data.forEach(line => {
+        const d = line.close
         const diff = Math.round((d - last) / last * 100)
         if ((diff > 0 && lastDiff > 0) || (diff < 0 && lastDiff < 0)) {
           lastDiff += diff
@@ -223,12 +228,13 @@ export default {
     exponentials () {
       let beforeLastDiff = 0
       let lastDiff = 0
-      let last = this.data[0]
+      let last = this.data[0]?.close
       let exp = {
         positive: { diff: 0, count: { positive: 0, negative: 0 } },
         negative: { diff: 0, count: { positive: 0, negative: 0 } }
       }
-      this.data.forEach(d => {
+      this.data.forEach(line => {
+        const d = line.close
         const diff = (d - last) / last * 100
         if (beforeLastDiff > 0 && lastDiff > beforeLastDiff) {
           exp.positive.diff += diff
@@ -270,7 +276,13 @@ export default {
         this.data.pop()
         this.data = this.data.map(d => {
           d = d.split(',"')
-          return parseFloat(d[1].replace(/,|"/g, ''))
+          return {
+            date: d[0],
+            open: parseFloat(d[1].replace(/,|"/g, '')),
+            high: parseFloat(d[2].replace(/,|"/g, '')),
+            low: parseFloat(d[3].replace(/,|"/g, '')),
+            close: parseFloat(d[4].replace(/,|"/g, '')),
+          }
         }).reverse()
         this.draw()
         this.bot()
@@ -279,10 +291,10 @@ export default {
     },
     draw () {
       const c = document.getElementById('canvas')
-      let min = Math.log(this.data[0])
-      let max = Math.log(this.data[0])
-      let data = this.data.map(d => {
-        d = Math.log(d)
+      let min = Math.log(this.data[0].close)
+      let max = Math.log(this.data[0].close)
+      let data = this.data.map(line => {
+        const d = Math.log(line.close)
         if (d < min) min = d
         if (d > max) max = d
         return d
@@ -354,6 +366,7 @@ export default {
       ctx.stroke()
     },
     bot () {
+      console.log('')
       // settings
       let reinvestPercentage = 1 / 100
       let standardBid = 100
@@ -368,7 +381,8 @@ export default {
       let totalInvested = 0
       const acceptHigherMean = true
       const trades = []
-      this.data.forEach((price, i) => {
+      this.data.forEach((line, i) => {
+        const price = line.close
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
         const average = this.getAverage(this.data, 100, i)
@@ -401,7 +415,7 @@ export default {
             reinvestments += reinvestment
           }
 
-          let bid = Math.min(standardBid * Math.pow(average / price, 2), 2 * standardBid) || standardBid
+          let bid = Math.min(standardBid * Math.pow(average / price, 5), 2 * standardBid) || standardBid
           investments += bid
 
           const value = bid + reinvestment
@@ -422,7 +436,7 @@ export default {
           const yearlySell = trades.slice(-365).filter(t => t.type === 'sell')
           const yearlyGain = Math.floor(yearlySell.reduce((a, t) => a + t.gain, 0))
           console.log(
-            Math.ceil(i / 365),
+            line.date,
             'gains: ' + yearlyGain + ' ' + Math.round(yearlyGain / investmentsMax * 100) + '%',
             'investment max: ' + Math.floor(investmentsMax),
             'investments: ' + Math.floor(investments) + '+' +  Math.floor(reinvestments),
@@ -434,7 +448,7 @@ export default {
       })
       totalInvested = investments + reinvestments
       console.log(
-        'gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsMax * 100) + '%',
+        'TOTAL => gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsMax * 100) + '%',
         'investment max: ' + Math.floor(investmentsMax),
         'investments: ' + Math.floor(investments) + '+' +  Math.floor(reinvestments),
         'asset value: ' + Math.floor(investmentValue),
@@ -445,7 +459,7 @@ export default {
     getAverage (data, span, index) {
       index = Math.min(data.length, Math.max(0, index + 1))
       const range = data.slice(Math.max(index - span, 0), index)
-      const sum = range.reduce((a, price) => a + price, 0)
+      const sum = range.reduce((a, price) => a + price.close, 0)
       return sum / range.length
     }
   }
