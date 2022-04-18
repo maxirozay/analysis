@@ -377,7 +377,7 @@ export default {
       let assets = 0
       let gains = 0
       let reinvestments = 0
-      let fee = 0.01 / 100
+      let fee = 0.1 / 100
       let investmentValue = 0
       let totalInvested = 0
       let buyCounter = 0
