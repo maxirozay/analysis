@@ -423,7 +423,7 @@ export default {
             reinvestments += reinvestment
           }
 
-          let bid = Math.min(standardBid * Math.pow(average / price, 5), 2 * standardBid) || standardBid
+          let bid = Math.min(standardBid / 2 * Math.pow(average / price, 5), standardBid) || standardBid
           investments += bid
 
           const value = bid + reinvestment
