@@ -473,6 +473,13 @@ export default {
       const range = data.slice(Math.max(index - span, 0), index)
       const sum = range.reduce((a, price) => a + price.close, 0)
       return sum / range.length
+    },
+    getExpAverage (data, span, index) {
+      index = Math.min(data.length, Math.max(0, index + 1))
+      const range = data.slice(Math.max(index - span, 0), index)
+      const sf = 2 / (1 + span)
+      const sum = range.reduce((ema, price) => price.close * sf + (1 - sf) * ema, range[0]?.close || 0)
+      return sum
     }
   }
 }
