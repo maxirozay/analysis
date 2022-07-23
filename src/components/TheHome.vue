@@ -455,14 +455,14 @@ export default {
           )
         }
       })
-      totalInvested = investments + reinvestments
+      totalInvested = Math.floor(investments + reinvestments)
       console.log(
         'TOTAL => ' + Math.floor(gains + reinvestments),
         'gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsMax * 100) + '%',
         'investment max: ' + Math.floor(investmentsMax),
         buyCounterMax,
-        'investments: ' + Math.floor(investments) + '+' +  Math.floor(reinvestments),
-        'asset value: ' + Math.floor(investmentValue),
+        'investments: ' + totalInvested + ' => ' + Math.floor(investments) + '+' +  Math.floor(reinvestments),
+        'asset value: ' + Math.floor(investmentValue) + ' ' + Math.floor((investmentValue - totalInvested) / totalInvested * 100) + '%',
         'mean price: ' + Math.floor(totalInvested / assets),
         'sell orders: ' + trades.filter(t => t.type === 'sell').length,
         'reinvestmentBid: ' + Math.floor(reinvestmentBid)
