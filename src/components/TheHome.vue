@@ -394,23 +394,26 @@ export default {
         const strength = average / average2
         totalInvested = investments + reinvestments
         if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / average * strength), 1.5)) {
-          const gain = investmentValue - totalInvested
+          const assetToSell = Math.min(assets, 10000)
+          let assetToSellValue = assetToSell * price
+          assetToSellValue -= assetToSellValue * fee
+          const gain = Math.max(0, assetToSellValue - investments - reinvestments)
           reinvestmentBid += reinvestPercentage * gain
-          gains += investmentValue - investments
+          gains += Math.max(0, assetToSellValue - investments)
           investmentsMax = Math.max(investments, investmentsMax)
           buyCounterMax = Math.max(buyCounter, buyCounterMax)
           trades.push({
             date: Date.now(),
             pair: '',
             price,
-            value: investmentValue,
-            amount: assets,
+            value: assetToSellValue,
+            amount: assetToSell,
             type: 'sell',
             gain
           })
-          investments = 0
-          reinvestments = 0
-          assets = 0
+          reinvestments = Math.max(0, reinvestments - Math.max(0, assetToSellValue - investments))
+          investments = Math.max(0, investments - assetToSellValue)
+          assets -= assetToSell
           buyCounter = 0
         }
 
