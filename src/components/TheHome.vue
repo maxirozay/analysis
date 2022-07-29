@@ -367,6 +367,7 @@ export default {
     },
     bot () {
       console.log('')
+      let avgPerf = 0
       // settings
       let reinvestPercentage = 1 / 100
       let reinvestmentBid = 0
@@ -389,11 +390,8 @@ export default {
         investmentValue = assets * price
         investmentValue -= investmentValue * fee
         const span = 20
-        const average = this.getAverage(this.data, span, i)
-        const average2 = this.getAverage(this.data, span, i - 10)
-        const strength = average / average2
         totalInvested = investments + reinvestments
-        if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / average * strength), 1.5)) {
+        if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / this.getAverage(this.data, span, i - 10)), 1.5)) {
           const gain = investmentValue - totalInvested
           reinvestmentBid += reinvestPercentage * gain
           gains += investmentValue - investments
@@ -416,6 +414,7 @@ export default {
 
         const mean = totalInvested / assets
         if (acceptHigherMean || !mean || price < mean) {
+          const average = this.getAverage(this.data, span, i)
           let reinvestment = 0
           if (reinvestmentBid && gains > reinvestmentBid) {
             reinvestment = Math.min(reinvestmentBid / 2 * Math.pow(average / price, 5), reinvestmentBid)
@@ -444,9 +443,11 @@ export default {
         if (i && i % 365 == 0) {
           const yearlySell = trades.slice(-365).filter(t => t.type === 'sell')
           const yearlyGain = Math.floor(yearlySell.reduce((a, t) => a + t.gain, 0))
+          const perf = Math.round(yearlyGain / investmentsMax * 100)
+          avgPerf += perf
           console.log(
             line.date,
-            'gains: ' + yearlyGain + ' ' + Math.round(yearlyGain / investmentsMax * 100) + '%',
+            'gains: ' + yearlyGain + ' ' + perf + '%',
             'investment max: ' + Math.floor(investmentsMax),
             'investments: ' + Math.floor(investments) + '+' +  Math.floor(reinvestments),
             'asset value: ' + Math.floor(investmentValue),
@@ -457,6 +458,7 @@ export default {
       })
       totalInvested = Math.floor(investments + reinvestments)
       console.log(
+        'avg perf: ' + avgPerf / Math.floor(this.data.length / 365)+ '%',
         'TOTAL => ' + Math.floor(gains + reinvestments),
         'gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsMax * 100) + '%',
         'investment max: ' + Math.floor(investmentsMax),
