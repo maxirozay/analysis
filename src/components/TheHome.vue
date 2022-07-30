@@ -263,7 +263,7 @@ export default {
     }
   },
   created () {
-    this.getData('sp500', true)
+    // this.getData('sp500', true)
     this.getData('ETH')
   },
   methods: {
@@ -371,7 +371,7 @@ export default {
       console.log('')
       let avgPerf = 0
       // settings
-      let reinvestPercentage = 1 / 100
+      let reinvestPercentage = 10 / 100
       let reinvestmentBid = 0
       let standardBid = 100
 
@@ -416,15 +416,15 @@ export default {
 
         const mean = totalInvested / assets
         if (acceptHigherMean || !mean || price < mean) {
-          const average = this.getAverage(data, span, i)
+          const average = this.getAverage(data, 100, i)
           let reinvestment = 0
           if (reinvestmentBid && gains > reinvestmentBid) {
-            reinvestment = Math.min(reinvestmentBid / 2 * Math.pow(average / price, 5), reinvestmentBid)
+            reinvestment = Math.min(reinvestmentBid / 2 * average / price, reinvestmentBid)
             gains -= reinvestment
             reinvestments += reinvestment
           }
 
-          let bid = Math.min(standardBid / 2 * Math.pow(average / price, 5), standardBid) || standardBid
+          let bid = Math.min(standardBid / 2 * average / price, standardBid) || standardBid
           investments += bid
 
           const value = bid + reinvestment
@@ -447,7 +447,7 @@ export default {
           const yearlyGain = Math.floor(yearlySell.reduce((a, t) => a + t.gain, 0))
           const perf = Math.round(yearlyGain / investmentsMax * 100)
           avgPerf += perf
-          /*console.log(
+          console.log(
             line.date,
             'gains: ' + yearlyGain + ' ' + perf + '%',
             'investment max: ' + Math.floor(investmentsMax),
@@ -455,7 +455,7 @@ export default {
             'asset value: ' + Math.floor(investmentValue),
             'mean price: ' + Math.floor(totalInvested / assets),
             'sell orders: ' + yearlySell.length
-          )*/
+          )
         }
       })
       totalInvested = Math.floor(investments + reinvestments)
