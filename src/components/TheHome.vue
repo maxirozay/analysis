@@ -261,6 +261,24 @@ export default {
         }
       }
       return exp
+    },
+    dataStats () {
+      let min = Math.log(this.data[0].close)
+      let max = Math.log(this.data[0].close)
+      this.data.map(line => {
+        const d = Math.log(line.close)
+        if (d < min) min = d
+        if (d > max) max = d
+        return d
+      })
+      const c = document.getElementById('canvas')
+      const scaleY = c.clientHeight / 100
+      const percent = 100 / (max - min) * scaleY
+      return {
+        min,
+        max,
+        percent
+      }
     }
   },
   async created () {
@@ -297,19 +315,10 @@ export default {
     },
     draw () {
       const c = document.getElementById('canvas')
-      let min = Math.log(this.data[0].close)
-      let max = Math.log(this.data[0].close)
-      let data = this.data.map(line => {
-        const d = Math.log(line.close)
-        if (d < min) min = d
-        if (d > max) max = d
-        return d
-      })
       const scaleY = c.clientHeight / 100
       const scaleX = c.clientWidth / this.data.length
-      const percent = 100 / (max - min) * scaleY
-      this.drawingData = data.map(d => {
-        return (d - min) * percent
+      this.drawingData = this.data.map(d => {
+        return this.priceToCoordinate(d.close)
       })
 
       c.width = this.data.length * scaleX
@@ -319,6 +328,9 @@ export default {
 
       this.drawPrices(c, ctx, scaleX, this.drawingData)
       this.drawAverage(c, ctx, scaleX, this.drawingData)
+    },
+    priceToCoordinate (price) {
+      return (Math.log(price) - this.dataStats.min) * this.dataStats.percent
     },
     drawPrices (c, ctx, scaleX, data) {
       ctx.beginPath()
@@ -377,6 +389,15 @@ export default {
       const scaleX = c.clientWidth / this.data.length
       ctx.beginPath()
       ctx.arc(i * scaleX, c.height - this.drawingData[i], 4, 0, 2 * Math.PI, false)
+      ctx.fillStyle = '#fff'
+      ctx.fill()
+    },
+    drawAverageBuy (i, price) {
+      const c = document.getElementById('canvas')
+      const ctx = c.getContext('2d')
+      const scaleX = c.clientWidth / this.data.length
+      ctx.beginPath()
+      ctx.arc(i * scaleX, c.height - this.priceToCoordinate(price), 1, 0, 2 * Math.PI, false)
       ctx.fillStyle = '#fff'
       ctx.fill()
     },
@@ -456,6 +477,7 @@ export default {
             amount,
             type: 'buy'
           })
+          this.drawAverageBuy(i, (investments + reinvestments) / assets)
         }
         
         if (i && i % 365 == 0) {
