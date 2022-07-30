@@ -83,6 +83,7 @@ export default {
   data () {
     return {
       data: [],
+      drawingData: [],
       averageSpan: 100
     }
   },
@@ -307,7 +308,7 @@ export default {
       const scaleY = c.clientHeight / 100
       const scaleX = c.clientWidth / this.data.length
       const percent = 100 / (max - min) * scaleY
-      data = data.map(d => {
+      this.drawingData = data.map(d => {
         return (d - min) * percent
       })
 
@@ -316,8 +317,8 @@ export default {
       const ctx = c.getContext('2d')
       ctx.lineWidth = 1
 
-      this.drawPrices(c, ctx, scaleX, data)
-      this.drawAverage(c, ctx, scaleX, data)
+      this.drawPrices(c, ctx, scaleX, this.drawingData)
+      this.drawAverage(c, ctx, scaleX, this.drawingData)
     },
     drawPrices (c, ctx, scaleX, data) {
       ctx.beginPath()
@@ -331,7 +332,7 @@ export default {
           if (d < data[i + 1]) {
             ctx.beginPath()
             ctx.moveTo(i * scaleX, c.height - d)
-            ctx.strokeStyle = '#0a0'
+            ctx.strokeStyle = '#0a01'
             ctx.lineTo(data.length * scaleX, c.height - d)
             ctx.stroke()
             ctx.beginPath()
@@ -342,7 +343,7 @@ export default {
           if (d > data[i + 1]) {
             ctx.beginPath()
             ctx.moveTo(i * scaleX, c.height - d)
-            ctx.strokeStyle = '#a00'
+            ctx.strokeStyle = '#a001'
             ctx.lineTo(data.length * scaleX, c.height - d)
             ctx.stroke()
             ctx.beginPath()
@@ -369,6 +370,15 @@ export default {
         ctx.moveTo(i * scaleX, c.height - average)
       }
       ctx.stroke()
+    },
+    drawSale (i) {
+      const c = document.getElementById('canvas')
+      const ctx = c.getContext('2d')
+      const scaleX = c.clientWidth / this.data.length
+      ctx.beginPath()
+      ctx.arc(i * scaleX, c.height - this.drawingData[i], 4, 0, 2 * Math.PI, false)
+      ctx.fillStyle = '#fff'
+      ctx.fill()
     },
     bot (data) {
       console.log('')
@@ -417,6 +427,7 @@ export default {
           reinvestments = 0
           assets = 0
           buyCounter = 0
+          this.drawSale(i)
         }
 
         const mean = totalInvested / assets
