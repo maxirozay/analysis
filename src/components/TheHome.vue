@@ -262,34 +262,37 @@ export default {
       return exp
     }
   },
-  created () {
-    this.getData('sp500', true)
-    this.getData('ETH')
+  async created () {
+    await this.getData('sp500', true)
+    await this.getData('ETH')
   },
   methods: {
     getData (filename, reverse) {
-      const xhttp = new XMLHttpRequest()
-      xhttp.open('GET', `data/${filename}.csv`, true)
-      xhttp.responseType = 'text'
-      xhttp.onload = () => {
-        this.data = xhttp.responseText.split(/\r?\n|\r/)
-        this.data.shift()
-        this.data.pop()
-        this.data = this.data.map(d => {
-          d = d.split(',')
-          return {
-            date: d[0],
-            open: parseFloat(d[1].replace(/,|"/g, '')),
-            high: parseFloat(d[2].replace(/,|"/g, '')),
-            low: parseFloat(d[3].replace(/,|"/g, '')),
-            close: parseFloat(d[4].replace(/,|"/g, '')),
-          }
-        })
-        if (reverse) this.data.reverse()
-        this.draw()
-        this.bot(this.data)
-      }
-      xhttp.send()
+      return new Promise(resolve => {
+        const xhttp = new XMLHttpRequest()
+        xhttp.open('GET', `data/${filename}.csv`, true)
+        xhttp.responseType = 'text'
+        xhttp.onload = () => {
+          this.data = xhttp.responseText.split(/\r?\n|\r/)
+          this.data.shift()
+          this.data.pop()
+          this.data = this.data.map(d => {
+            d = d.split(',')
+            return {
+              date: d[0],
+              open: parseFloat(d[1].replace(/,|"/g, '')),
+              high: parseFloat(d[2].replace(/,|"/g, '')),
+              low: parseFloat(d[3].replace(/,|"/g, '')),
+              close: parseFloat(d[4].replace(/,|"/g, '')),
+            }
+          })
+          if (reverse) this.data.reverse()
+          this.draw()
+          this.bot(this.data)
+          resolve(this.data)
+        }
+        xhttp.send()
+      })
     },
     draw () {
       const c = document.getElementById('canvas')
