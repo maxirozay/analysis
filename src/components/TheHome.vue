@@ -400,8 +400,8 @@ export default {
         totalInvested = investments + reinvestments
         if (investmentValue > totalInvested * Math.min(Math.max(1.1, price / this.getAverage(data, span, i - 10)), 1.5)) {
           const gain = investmentValue - totalInvested
-          reinvestmentBid += reinvestPercentage * gain
           gains += investmentValue - investments
+          reinvestmentBid = reinvestPercentage * gains
           investmentsMax = Math.max(investments, investmentsMax)
           buyCounterMax = Math.max(buyCounter, buyCounterMax)
           trades.push({
