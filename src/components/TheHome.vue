@@ -263,7 +263,7 @@ export default {
     }
   },
   created () {
-    // this.getData('sp500', true)
+    this.getData('sp500', true)
     this.getData('ETH')
   },
   methods: {
@@ -370,6 +370,8 @@ export default {
     bot (data) {
       console.log('')
       let avgPerf = 0
+      let yearsWithGain = 0
+      let minYearlyPerf = 100
       // settings
       let reinvestPercentage = 10 / 100
       let reinvestmentBid = 0
@@ -447,7 +449,9 @@ export default {
           const yearlyGain = Math.floor(yearlySell.reduce((a, t) => a + t.gain, 0))
           const perf = Math.round(yearlyGain / investmentsMax * 100)
           avgPerf += perf
-          console.log(
+          if (perf > 0) yearsWithGain++
+          minYearlyPerf = Math.min(minYearlyPerf, perf)
+          /*console.log(
             line.date,
             'gains: ' + yearlyGain + ' ' + perf + '%',
             'investment max: ' + Math.floor(investmentsMax),
@@ -455,7 +459,7 @@ export default {
             'asset value: ' + Math.floor(investmentValue),
             'mean price: ' + Math.floor(totalInvested / assets),
             'sell orders: ' + yearlySell.length
-          )
+          )*/
         }
       })
       totalInvested = Math.floor(investments + reinvestments)
@@ -464,6 +468,8 @@ export default {
         'asset perf: ' + Math.round((data[data.length - 1].close / data[0].close - 1) * 100) + '%',
         'bot perf: ' + Math.floor(((gains + revinvestmentsValue) / investmentsMax) * 100) + '%',
         'avg yearly perf: ' + Math.floor(avgPerf / Math.floor(data.length / 365)) + '%',
+        'min yearly perf: ' + minYearlyPerf,
+        'years with gain: ' + Math.floor(yearsWithGain / Math.floor(data.length / 365) * 100) + '%'
       )
       console.log(
         'total gains => ' + Math.floor(gains + revinvestmentsValue),
