@@ -452,6 +452,7 @@ export default {
         }
 
         const mean = totalInvested / assets
+        this.drawAverageBuy(i - 1, mean)
         if (acceptHigherMean || !mean || price < mean) {
           const average = this.getAverage(data, 100, i)
           let reinvestment = 0
@@ -477,7 +478,6 @@ export default {
             amount,
             type: 'buy'
           })
-          this.drawAverageBuy(i, (investments + reinvestments) / assets)
         }
         
         if (i && i % 365 == 0) {
