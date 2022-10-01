@@ -433,7 +433,6 @@ export default {
           const gain = investmentValue - totalInvested
           gains += investmentValue - investments
           reinvestmentBid = reinvestPercentage * gains
-          investmentsMax = Math.max(investments, investmentsMax)
           buyCounterMax = Math.max(buyCounter, buyCounterMax)
           trades.push({
             date: Date.now(),
@@ -464,6 +463,7 @@ export default {
 
           let bid = Math.min(standardBid / 2 * average / price, standardBid) || standardBid
           investments += bid
+          investmentsMax = Math.max(investments, investmentsMax)
 
           const value = bid + reinvestment
           let amount = value / price
@@ -499,15 +499,17 @@ export default {
         }
       })
       totalInvested = Math.floor(investments + reinvestments)
+      const injectedAssetAvailable = investmentsMax - investments
       const revinvestmentsValue = reinvestments / totalInvested * investmentValue
       console.log(
+        'bot perf: ' + Math.floor(((gains + investmentValue + injectedAssetAvailable) / investmentsMax - 1) * 100) + '%',
         'asset perf: ' + Math.round((data[data.length - 1].close / data[0].close - 1) * 100) + '%',
-        'bot perf: ' + Math.floor(((gains + revinvestmentsValue) / investmentsMax) * 100) + '%',
         'avg yearly perf: ' + Math.floor(avgPerf / Math.floor(data.length / 365)) + '%',
         'min yearly perf: ' + minYearlyPerf,
         'years with gain: ' + Math.floor(yearsWithGain / Math.floor(data.length / 365) * 100) + '%'
       )
       console.log(
+        'worth => ' + Math.floor(gains + investmentValue + injectedAssetAvailable),
         'total gains => ' + Math.floor(gains + revinvestmentsValue),
         'realised gains: ' + Math.floor(gains) + ' ' + Math.round(gains / investmentsMax * 100) + '%',
       )
